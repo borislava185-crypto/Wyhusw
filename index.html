@@ -224,6 +224,13 @@ transition:color .15s,border-color .15s}
   </div>
 </header>
 
+<div style="background:#1a1d2e;padding:10px 16px;text-align:center;border-bottom:1px solid #272d4a">
+  <button onclick="testSpeak()" style="background:#5ee89a;color:#0c0e1a;border:none;border-radius:20px;padding:10px 24px;font-family:Nunito,sans-serif;font-size:.9rem;font-weight:800;cursor:pointer">
+    🔊 Test Speech — tap me first
+  </button>
+  <div id="speechStatus" style="color:#7a84a8;font-size:.75rem;margin-top:6px;font-family:Nunito,sans-serif"></div>
+</div>
+
 <main>
   <div class="status" id="status"></div>
   <div class="micbar" id="micbar">
@@ -266,6 +273,40 @@ transition:color .15s,border-color .15s}
 </main>
 
 <script>
+function testSpeak() {
+  const status = document.getElementById('speechStatus');
+  status.textContent = 'Trying…';
+  
+  if (!window.speechSynthesis) {
+    status.textContent = '❌ speechSynthesis not available on this browser';
+    return;
+  }
+  
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance('Hello, I am speaking.');
+  u.lang = 'en-GB';
+  u.volume = 1;
+  u.rate = 0.9;
+  u.pitch = 1;
+  
+  const voices = window.speechSynthesis.getVoices();
+  status.textContent = 'Found ' + voices.length + ' voices';
+  
+  const v = voices.find(x => x.name === 'Samantha') 
+    || voices.find(x => x.name === 'Karen')
+    || voices.find(x => x.name === 'Daniel')
+    || voices.find(x => x.lang.startsWith('en'))
+    || voices[0];
+  if (v) { u.voice = v; status.textContent += ' — using: ' + v.name; }
+  else { status.textContent += ' — no voice found!'; }
+  
+  u.onstart = () => status.textContent = '✅ Speaking!';
+  u.onend   = () => status.textContent = '✅ Done! Speech works.';
+  u.onerror = (e) => status.textContent = '❌ Error: ' + e.error;
+  
+  window.speechSynthesis.speak(u);
+}
+
 /* ══════════════════════════════════════════════
    STATE
 ══════════════════════════════════════════════ */
