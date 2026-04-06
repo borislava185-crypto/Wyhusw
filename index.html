@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>AAC Talker</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800;900&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://code.responsivevoice.org/responsivevoice.js?key=FREE"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -507,42 +508,47 @@ function speakSentNow() {
     .replace(/\s+—/g,' —')
     .trim();
   if (!txt) return;
-  try {
-    window.speechSynthesis.cancel();
-    const u = new window.SpeechSynthesisUtterance(txt);
-    u.lang = 'en-US';
-    u.rate = 0.88;
-    u.pitch = 1.05;
-    u.volume = 1;
-    const btn = document.getElementById('sentSpkBtn');
-    btn.textContent = '🔊 Speaking…';
-    u.onend = () => btn.innerHTML = '🔊 Speak this';
-    u.onerror = () => btn.innerHTML = '🔊 Speak this';
-    window.speechSynthesis.speak(u);
-  } catch(e) {
-    alert('Speech not supported in this browser. Please use Chrome.');
-  }
+  doSpeak(txt, document.getElementById('sentSpkBtn'));
 }
 
 function speakSent() {
-  if (!('speechSynthesis' in window)) return;
   const txt = buildSpokenSentence();
-  if (!txt || !ST.body) return;
-  const btn = document.getElementById('spkBtn');
-  btn.classList.add('spk-on');
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(txt);
-  u.rate = .88; u.pitch = 1.05;
-  u.onend = () => btn.classList.remove('spk-on');
-  speechSynthesis.speak(u);
+  if (txt && ST.body) doSpeak(txt, null);
 }
 function speakText(t) {
+  doSpeak(t, null);
+}
+
+async function doSpeak(txt, btn) {
+  if (!txt) return;
+  if (btn) btn.textContent = '⏳ Speaking…';
   try {
-    window.speechSynthesis.cancel();
-    const u = new window.SpeechSynthesisUtterance(t);
-    u.lang = 'en-US'; u.rate = 0.88; u.pitch = 1.05; u.volume = 1;
-    window.speechSynthesis.speak(u);
-  } catch(e) { alert('Speech not supported. Use Chrome.'); }
+    // Use ResponsiveVoice CDN — works on all browsers and iOS
+    if (window.responsiveVoice && responsiveVoice.voiceSupport()) {
+      responsiveVoice.speak(txt, 'UK English Female', {
+        rate: 0.9,
+        onend: () => { if (btn) btn.textContent = '🔊 Speak this'; }
+      });
+      return;
+    }
+    // Fallback to native speechSynthesis
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      setTimeout(() => {
+        const u = new SpeechSynthesisUtterance(txt);
+        u.lang = 'en-GB'; u.rate = 0.88; u.pitch = 1.0; u.volume = 1.0;
+        u.onend = () => { if (btn) btn.textContent = '🔊 Speak this'; };
+        u.onerror = () => { if (btn) btn.textContent = '🔊 Speak this'; };
+        window.speechSynthesis.speak(u);
+      }, 150);
+      return;
+    }
+    if (btn) btn.textContent = '🔊 Speak this';
+    alert('Speech not supported on this device.');
+  } catch(e) {
+    if (btn) btn.textContent = '🔊 Speak this';
+    console.log(e);
+  }
 }
 
 /* ══════════════════════════════════════════════
