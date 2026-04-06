@@ -345,8 +345,7 @@ const ALTS = {
   loc: [
     {i:'⬅️',l:'left side',   v:'left side'},    {i:'➡️',l:'right side',  v:'right side'},
     {i:'🎯',l:'centre',      v:'centre'},        {i:'⬆️',l:'top',         v:'top'},
-    {i:'⬇️',l:'bottom',      v:'bottom'},        {i:'↔️',l:'whole area',  v:'whole area'},
-    {i:'🔁',l:'front',       v:'front'},         {i:'🔙',l:'back',        v:'back'},
+    {i:'⬇️',l:'bottom',      v:'bottom'},        {i:'🔁',l:'front',       v:'front'},         {i:'🔙',l:'back',        v:'back'},
     {i:'🌐',l:'all over',    v:'all over'},
   ],
   feel: [
@@ -731,7 +730,6 @@ const specialBtns=[
 ];
 function r0(){
   const area=document.getElementById('area');
-  area.appendChild(mkH('1','🫀','Which part of your body hurts?'));
   const g=mkG();
   bodyBtns.forEach(d=>{
     const b=mkAB(d);
@@ -763,13 +761,12 @@ function r0(){
 const locBtns=[
   {i:'⬅️',l:'Left side',  c:'blue',  v:'left side'},   {i:'➡️',l:'Right side', c:'blue',  v:'right side'},
   {i:'🎯',l:'Centre',     c:'teal',  v:'centre'},        {i:'⬆️',l:'Top',        c:'purple',v:'top'},
-  {i:'⬇️',l:'Bottom',     c:'purple',v:'bottom'},        {i:'↔️',l:'Whole area', c:'orange',v:'whole area'},
+  {i:'⬇️',l:'Bottom',     c:'purple',v:'bottom'},
   {i:'🔁',l:'Front',      c:'green', v:'front'},         {i:'🔙',l:'Back',       c:'gray',  v:'back'},
   {i:'🌐',l:'All over',   c:'red',   v:'all over'},
 ];
 function r1(){
   const area=document.getElementById('area');
-  area.appendChild(mkH('2','📍','Where exactly does it hurt?'));
   const g=mkG(true);
   locBtns.forEach(d=>{
     const b=mkAB(d);
@@ -794,7 +791,6 @@ const feelBtns=[
 ];
 function r2(){
   const area=document.getElementById('area');
-  area.appendChild(mkH('3','💬','What does it feel like?'));
   const g=mkG(true);
   feelBtns.forEach(d=>{
     const b=mkAB(d);
@@ -814,14 +810,13 @@ const sevBtns=[
   {cls:'sm1',i:'😐',l:'Mild',         v:'mild'},
   {cls:'sm2',i:'😟',l:'Uncomfortable',v:'uncomfortable'},
   {cls:'sm2',i:'😣',l:'Moderate',     v:'moderate'},
-  {cls:'sm2',i:'😣',l:'Quite bad',    v:'quite bad'},
+  {cls:'sm2',i:'😖',l:'Quite bad',    v:'quite bad'},
   {cls:'sm3',i:'😰',l:'Severe',       v:'severe'},
   {cls:'sm3',i:'😱',l:'Very severe',  v:'very severe'},
   {cls:'sm4',i:'💀',l:'Unbearable',   v:'unbearable'},
 ];
 function r3(){
   const area=document.getElementById('area');
-  area.appendChild(mkH('4','📊','How bad is the pain right now?'));
   const sg=document.createElement('div'); sg.className='sev-grid';
   let nxt;
   sevBtns.forEach(d=>{
