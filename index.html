@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AAC Talker</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800;900&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0e1a;--surf:#161929;--surf2:#1e2236;--bdr:#272d4a;
+  --blue:#4f80f0;--bglow:rgba(79,128,240,.35);
+  --green:#5ee89a;--gglow:rgba(94,232,154,.3);
+  --red:#ff5f5f;--rglow:rgba(255,95,95,.28);
+  --amber:#fbbf24;--amglow:rgba(251,191,36,.3);
+  --text:#e8ecff;--sub:#7a84a8;
+  --r:20px;--br:16px;
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100dvh;color:var(--text);overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 70% 50% at 15% 0%,rgba(79,128,240,.12) 0%,transparent 55%),
+             radial-gradient(ellipse 50% 40% at 85% 100%,rgba(94,232,154,.07) 0%,transparent 55%)}
+
+header{position:sticky;top:0;z-index:200;background:rgba(12,14,26,.96);backdrop-filter:blur(16px);
+border-bottom:1px solid var(–bdr);padding:12px 16px;display:flex;align-items:center;gap:10px}
+.h-logo{font-size:1.6rem}
+.h-title{font-family:‘Baloo 2’,cursive;font-size:1.15rem;font-weight:900;line-height:1.1}
+.h-sub{font-size:.65rem;color:var(–sub);font-weight:700}
+.hdr-r{margin-left:auto;display:flex;gap:8px}
+.hbtn{display:flex;align-items:center;gap:6px;background:var(–surf2);border:1.5px solid var(–bdr);
+border-radius:30px;padding:8px 13px;font-family:‘Nunito’,sans-serif;font-size:.78rem;font-weight:800;
+color:var(–sub);cursor:pointer;transition:all .2s;user-select:none}
+.hbtn:hover{border-color:var(–blue);color:var(–text)}
+.hbtn.mic-on{border-color:var(–red);color:var(–red);background:rgba(255,95,95,.1);box-shadow:0 0 16px var(–rglow)}
+.hbtn.spk-on{border-color:var(–green);color:var(–green);background:rgba(94,232,154,.1)}
+.mdot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+.hbtn.mic-on .mdot{animation:pdot 1s infinite}
+@keyframes pdot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.8);opacity:.4}}
+
+main{max-width:660px;margin:0 auto;padding:14px 12px 80px;position:relative;z-index:1}
+
+.status{border-radius:12px;padding:8px 14px;margin-bottom:10px;font-size:.8rem;font-weight:800;display:none;align-items:center;gap:8px}
+.status.show{display:flex}
+.ok{background:rgba(94,232,154,.08);border:1px solid rgba(94,232,154,.3);color:var(–green)}
+.err{background:rgba(255,95,95,.08);border:1px solid rgba(255,95,95,.3);color:var(–red)}
+.inf{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.3);color:var(–amber)}
+
+.micbar{background:var(–surf);border:1.5px solid var(–bdr);border-radius:var(–r);
+padding:11px 15px;margin-bottom:10px;display:none;align-items:center;gap:10px}
+.micbar.on{display:flex;border-color:var(–red)}
+.micbar-lbl{font-size:.58rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(–red);margin-bottom:2px}
+.micbar-txt{font-size:.87rem;font-weight:700;color:var(–text);font-family:‘Baloo 2’,cursive;min-height:18px}
+.micbar-txt em{color:var(–sub);font-style:italic}
+.wv{display:flex;align-items:center;gap:3px;height:20px;margin-left:auto;flex-shrink:0}
+.wv span{width:4px;border-radius:3px;background:var(–red);animation:wva 1s ease-in-out infinite}
+.wv span:nth-child(1){height:6px;animation-delay:0s}.wv span:nth-child(2){height:13px;animation-delay:.1s}
+.wv span:nth-child(3){height:20px;animation-delay:.2s}.wv span:nth-child(4){height:13px;animation-delay:.3s}
+.wv span:nth-child(5){height:6px;animation-delay:.4s}
+@keyframes wva{0%,100%{transform:scaleY(.35);opacity:.5}50%{transform:scaleY(1);opacity:1}}
+
+.qbox{background:var(–surf);border:1.5px solid var(–bdr);border-radius:var(–r);
+padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;gap:10px;
+min-height:48px;transition:border-color .3s}
+.qbox.on{border-color:rgba(79,128,240,.5)}
+.qbox-icon{font-size:1.2rem;flex-shrink:0}
+.qbox-txt{font-family:‘Baloo 2’,cursive;font-size:.95rem;font-weight:800;color:var(–text);line-height:1.4}
+.qcur{display:inline-block;width:2px;height:.85em;background:var(–blue);margin-left:2px;vertical-align:text-bottom;animation:blink .7s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+.prog{display:flex;gap:7px;margin-bottom:12px}
+.pip{flex:1;height:5px;border-radius:3px;background:var(–bdr);transition:background .4s}
+.pip.done{background:var(–green)}.pip.act{background:var(–blue)}
+
+/* ═══════════ SENTENCE ═══════════ */
+.sent-wrap{background:var(–surf);border:1.5px solid var(–bdr);border-radius:var(–r);
+padding:16px 16px 14px;margin-bottom:12px;transition:border-color .4s,box-shadow .4s;min-height:76px}
+.sent-wrap.complete{border-color:var(–green);box-shadow:0 0 22px var(–gglow)}
+.sent-lbl{font-size:.58rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+color:var(–sub);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.sent-hint{font-size:.58rem;font-weight:700;color:rgba(251,191,36,.7);letter-spacing:0;text-transform:none;display:none}
+.sent-spk{display:none;align-items:center;gap:5px;background:var(–green);border:none;border-radius:20px;
+padding:5px 12px;font-family:‘Nunito’,sans-serif;font-size:.75rem;font-weight:800;color:#0c0e1a;
+cursor:pointer;transition:transform .12s,box-shadow .12s;flex-shrink:0}
+.sent-spk:hover{transform:scale(1.06);box-shadow:0 4px 14px var(–gglow)}
+.sent-spk:active{transform:scale(.93)}
+.sent-spk.show{display:flex}
+.sent-body{font-family:‘Baloo 2’,cursive;font-size:1.08rem;font-weight:800;
+line-height:1.9;display:flex;flex-wrap:wrap;gap:2px 1px;align-items:baseline}
+.sent-ph{font-family:‘Nunito’,sans-serif;font-size:.88rem;color:var(–sub);font-style:italic;font-weight:600}
+
+/* word chips */
+.wc{display:inline-flex;align-items:center;border-radius:6px;padding:2px 7px;
+font-family:‘Baloo 2’,cursive;font-size:1.05rem;font-weight:800;
+cursor:pointer;user-select:none;
+transition:transform .12s,filter .13s,background .15s;
+-webkit-tap-highlight-color:transparent;
+animation:wIn .3s cubic-bezier(.34,1.56,.64,1) both}
+.wc:hover{transform:scale(1.12);filter:brightness(1.25)}
+.wc:active{transform:scale(.9)}
+.wc.lit{outline:2.5px solid var(–amber);outline-offset:1px;filter:brightness(1.3);transform:scale(1.08)}
+.wc-g   {color:var(–sub);background:transparent;border:none}
+.wc-g:hover{background:rgba(148,163,184,.1);color:var(–text)}
+.wc-body{color:#fca5a5;background:rgba(255,95,95,.12);  border:1px solid rgba(255,95,95,.25)}
+.wc-loc {color:#fdba74;background:rgba(251,146,60,.12); border:1px solid rgba(251,146,60,.25)}
+.wc-feel{color:#c4b5fd;background:rgba(167,139,250,.14);border:1px solid rgba(167,139,250,.28)}
+.wc-sev {color:#fde68a;background:rgba(251,191,36,.13); border:1px solid rgba(251,191,36,.28)}
+.wc-num {color:#86efac;background:rgba(94,232,154,.12); border:1px solid rgba(94,232,154,.25)}
+@keyframes wIn{from{opacity:0;transform:scale(.4) translateY(4px)}to{opacity:1;transform:none}}
+
+/* ═══════════ ALT DRAWER ═══════════ */
+.alt-drawer{background:var(–surf2);border:2px solid var(–amber);border-radius:var(–r);
+padding:14px 14px 12px;margin-bottom:12px;animation:dIn .25s cubic-bezier(.34,1.4,.64,1)}
+@keyframes dIn{from{opacity:0;transform:translateY(-6px) scale(.97)}to{opacity:1;transform:none}}
+.alt-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+.alt-hd-lbl{font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(–amber)}
+.alt-x{cursor:pointer;font-size:1.1rem;color:var(–sub);transition:color .15s}
+.alt-x:hover{color:var(–text)}
+.alt-opts{display:flex;flex-wrap:wrap;gap:8px}
+.alt-opt{display:flex;align-items:center;gap:7px;background:var(–surf);border:1.5px solid var(–bdr);
+border-radius:10px;padding:9px 14px;font-size:.88rem;font-weight:800;color:var(–text);
+cursor:pointer;transition:transform .12s,border-color .15s,background .15s;
+-webkit-tap-highlight-color:transparent}
+.alt-opt:hover{transform:scale(1.05);border-color:var(–amber);background:rgba(251,191,36,.07)}
+.alt-opt:active{transform:scale(.93)}
+.alt-opt.sel{border-color:var(–green);background:rgba(94,232,154,.1);color:var(–green)}
+.alt-opt-ico{font-size:1.2rem}
+
+/* ═══════════ STEP BUTTONS ═══════════ */
+.sh{display:flex;align-items:center;gap:9px;margin:0 0 12px;animation:fadeUp .4s ease}
+.sn{background:var(–blue);color:#fff;width:26px;height:26px;border-radius:50%;
+display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:900;flex-shrink:0}
+.st{font-family:‘Baloo 2’,cursive;font-size:.95rem;font-weight:900;color:var(–text)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;animation:fadeUp .4s ease}
+.grid.sm{grid-template-columns:repeat(auto-fill,minmax(108px,1fr))}
+.ab{background:var(–surf);border:2px solid var(–bdr);border-radius:var(–br);padding:16px 9px 12px;
+cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;
+transition:transform .13s,box-shadow .13s,border-color .13s,background .13s;
+text-align:center;-webkit-tap-highlight-color:transparent;user-select:none}
+.ab:hover{transform:translateY(-3px);border-color:var(–blue);box-shadow:0 6px 22px var(–bglow)}
+.ab:active{transform:scale(.91)}
+.ab.sel{background:var(–blue);border-color:var(–blue);box-shadow:0 0 0 4px var(–bglow)}
+.ab.sel .bl{color:#fff}
+.ab.flash{animation:flash .4s ease}
+@keyframes flash{0%{background:var(–blue);transform:scale(1.07)}100%{}}
+.bi{font-size:2.1rem;line-height:1;display:block}
+.bl{font-size:.77rem;font-weight:800;color:var(–text);line-height:1.25}
+.ab[data-c=red]   {border-color:rgba(255,95,95,.4)}
+.ab[data-c=orange]{border-color:rgba(251,146,60,.4)}
+.ab[data-c=green] {border-color:rgba(94,232,154,.4)}
+.ab[data-c=blue]  {border-color:rgba(79,128,240,.4)}
+.ab[data-c=purple]{border-color:rgba(167,139,250,.4)}
+.ab[data-c=teal]  {border-color:rgba(45,212,191,.4)}
+.ab[data-c=yellow]{border-color:rgba(251,191,36,.4)}
+.ab[data-c=pink]  {border-color:rgba(244,114,182,.4)}
+.ab[data-c=gray]  {border-color:rgba(100,116,139,.35)}
+
+.sev-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;animation:fadeUp .4s ease}
+.sb{border-radius:var(–br);padding:17px 10px;cursor:pointer;border:2px solid transparent;
+display:flex;flex-direction:column;align-items:center;gap:8px;
+font-family:‘Baloo 2’,cursive;font-weight:800;font-size:.88rem;
+transition:transform .13s,filter .13s;-webkit-tap-highlight-color:transparent}
+.sb:hover{transform:translateY(-3px)}.sb:active{transform:scale(.91)}
+.sb.sel{filter:brightness(1.25);border-color:rgba(255,255,255,.45);box-shadow:0 0 0 4px rgba(255,255,255,.08)}
+.si{font-size:2rem}
+.sm1{background:rgba(94,232,154,.15);color:#5ee89a}
+.sm2{background:rgba(251,191,36,.15);color:#fbbf24}
+.sm3{background:rgba(255,95,95,.15);color:#ff5f5f}
+.sm4{background:rgba(200,40,40,.22);color:#ff3333}
+
+.sl-wrap{margin-top:13px;background:var(–surf);border:1.5px solid var(–bdr);border-radius:var(–br);padding:13px 15px;animation:fadeUp .5s ease}
+.sl-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+.sl-tit{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(–sub)}
+.sl-num{background:var(–blue);color:#fff;border-radius:20px;padding:3px 12px;font-size:.85rem;font-weight:900;min-width:36px;text-align:center}
+input[type=range]{-webkit-appearance:none;width:100%;height:9px;border-radius:6px;
+background:linear-gradient(to right,var(–blue) 0%,var(–blue) var(–pct,50%),var(–bdr) var(–pct,50%),var(–bdr) 100%);
+outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;
+background:var(–blue);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 10px var(–bglow);cursor:pointer}
+.sl-ticks{display:flex;justify-content:space-between;margin-top:5px}
+.sl-ticks span{font-size:.64rem;font-weight:700;color:var(–sub)}
+
+.nxt{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:13px;
+background:var(–blue);color:#fff;border:none;border-radius:30px;padding:13px 24px;
+font-family:‘Baloo 2’,cursive;font-size:1rem;font-weight:900;cursor:pointer;
+box-shadow:0 5px 20px var(–bglow);transition:transform .12s,opacity .2s;animation:fadeUp .5s ease}
+.nxt:disabled{opacity:.3;cursor:not-allowed}
+.nxt:hover:not(:disabled){transform:translateY(-2px)}
+.nxt:active:not(:disabled){transform:scale(.96)}
+
+.fin{background:var(–surf);border:2px solid var(–green);border-radius:var(–r);
+padding:26px 20px;text-align:center;box-shadow:0 0 36px var(–gglow);
+animation:boom .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes boom{from{transform:scale(.78) translateY(18px);opacity:0}to{transform:none;opacity:1}}
+.fin-badge{font-size:.62rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(–green);margin-bottom:10px}
+.fin-msg{font-family:‘Baloo 2’,cursive;font-size:1.18rem;font-weight:900;color:var(–text);line-height:1.6;margin-bottom:20px}
+.fin-acts{display:flex;gap:9px;flex-wrap:wrap;justify-content:center}
+.btn-spk{background:var(–green);color:#0c0e1a;border:none;border-radius:30px;padding:11px 22px;
+font-family:‘Baloo 2’,cursive;font-size:.95rem;font-weight:900;cursor:pointer;
+display:flex;align-items:center;gap:6px;box-shadow:0 5px 18px var(–gglow);transition:transform .12s}
+.btn-spk:hover{transform:translateY(-2px)}
+.btn-rst{background:transparent;color:var(–sub);border:1.5px solid var(–bdr);border-radius:30px;
+padding:11px 20px;font-family:‘Baloo 2’,cursive;font-size:.9rem;font-weight:800;cursor:pointer;transition:color .15s,border-color .15s}
+.btn-rst:hover{color:var(–text);border-color:var(–blue)}
+
+.back{display:none;align-items:center;gap:6px;background:transparent;color:var(–sub);
+border:1.5px solid var(–bdr);border-radius:30px;padding:7px 14px;
+font-family:‘Nunito’,sans-serif;font-size:.78rem;font-weight:800;cursor:pointer;margin-top:12px;
+transition:color .15s,border-color .15s}
+.back.show{display:inline-flex}
+.back:hover{color:var(–text);border-color:var(–blue)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media(max-width:460px){.grid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}.bi{font-size:1.9rem}}
+</style>
+
+</head>
+<body>
+<header>
+  <div class="h-logo">🗣️</div>
+  <div><div class="h-title">AAC Talker</div><div class="h-sub">Pain communication</div></div>
+  <div class="hdr-r">
+    <button class="hbtn" id="micBtn" onclick="toggleMic()"><span class="mdot"></span><span id="micLbl">🎙️ Listen</span></button>
+  </div>
+</header>
+
+<main>
+  <div class="status" id="status"></div>
+  <div class="micbar" id="micbar">
+    <div style="flex:1">
+      <div class="micbar-lbl">Listening…</div>
+      <div class="micbar-txt" id="micTxt"><em>Say something…</em></div>
+    </div>
+    <div class="wv"><span></span><span></span><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="qbox" id="qbox">
+    <div class="qbox-icon">💬</div>
+    <div class="qbox-txt"><span id="qTxt"></span><span class="qcur" id="qCur" style="display:none"></span></div>
+  </div>
+
+  <div class="prog">
+    <div class="pip act" id="p0"></div><div class="pip" id="p1"></div>
+    <div class="pip" id="p2"></div><div class="pip" id="p3"></div>
+  </div>
+
+  <div class="sent-wrap" id="sentWrap">
+    <div class="sent-lbl" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <span>📝 Your sentence</span>
+      <span class="sent-hint" id="sentHint">✏️ Tap any word to change it</span>
+      <button class="sent-spk" id="sentSpkBtn" onclick="speakSentNow()">🔊 Speak this</button>
+    </div>
+    <div class="sent-body" id="sentBody"><span class="sent-ph">Choose a button below to begin…</span></div>
+  </div>
+
+  <div class="alt-drawer" id="altDrawer" style="display:none">
+    <div class="alt-hd">
+      <span class="alt-hd-lbl" id="altTitle">Choose a different word</span>
+      <span class="alt-x" onclick="closeAlt()">✕</span>
+    </div>
+    <div class="alt-opts" id="altOpts"></div>
+  </div>
+
+  <div id="area"></div>
+  <button class="back" id="backBtn" onclick="goBack()">← Go back</button>
+</main>
+
+<script>
+/* ══════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════ */
+let ST = { body: null, loc: null, feel: null, sev: null, score: 8 };
+let currentStep = 0;
+const hist = [];
+let openSlot = null;
+
+/* ══════════════════════════════════════════════
+   SEVERITY DATA
+   Each severity entry has ONE clean phrase that
+   reads naturally as a complete sentence ending.
+   No separate qualifier — the phrase IS the phrase.
+══════════════════════════════════════════════ */
+const SEV_DATA = [
+  { v:'very mild',      label:'very mild',      phrase:"and it's very mild",             score_hint:1,  icon:'😌' },
+  { v:'mild',           label:'mild',            phrase:"and it's mild",                  score_hint:2,  icon:'😐' },
+  { v:'uncomfortable',  label:'uncomfortable',   phrase:"and it's quite uncomfortable",   score_hint:4,  icon:'😟' },
+  { v:'moderate',       label:'moderate',        phrase:"and it's fairly moderate",        score_hint:5,  icon:'😣' },
+  { v:'quite bad',      label:'quite bad',       phrase:"and it's quite bad",             score_hint:6,  icon:'😰' },
+  { v:'severe',         label:'severe',          phrase:"and it's quite severe",          score_hint:7,  icon:'😰' },
+  { v:'very severe',    label:'very severe',     phrase:"and it's very severe",           score_hint:9,  icon:'😱' },
+  { v:'unbearable',     label:'unbearable',      phrase:"and it's absolutely unbearable", score_hint:10, icon:'💀' },
+];
+
+/* Alternatives for each slot — used in the drawer */
+const ALTS = {
+  body: [
+    {i:'💔',l:'chest',   v:'chest'},    {i:'🤕',l:'head',     v:'head'},
+    {i:'🫃',l:'stomach', v:'stomach'},  {i:'🦵',l:'leg',      v:'leg'},
+    {i:'💪',l:'arm',     v:'arm'},      {i:'🔙',l:'back',     v:'back'},
+    {i:'🦶',l:'foot',    v:'foot'},     {i:'🤲',l:'hand',     v:'hand'},
+    {i:'🏋️',l:'shoulder',v:'shoulder'},{i:'🦿',l:'knee',     v:'knee'},
+    {i:'🩻',l:'hip',     v:'hip'},      {i:'🦷',l:'jaw',      v:'jaw'},
+  ],
+  loc: [
+    {i:'⬅️',l:'left side',   v:'left side'},    {i:'➡️',l:'right side',  v:'right side'},
+    {i:'🎯',l:'centre',      v:'centre'},        {i:'⬆️',l:'top',         v:'top'},
+    {i:'⬇️',l:'bottom',      v:'bottom'},        {i:'↔️',l:'whole area',  v:'whole area'},
+    {i:'🔁',l:'front',       v:'front'},         {i:'🔙',l:'back',        v:'back'},
+    {i:'🌐',l:'all over',    v:'all over'},
+  ],
+  feel: [
+    {i:'🔪',l:'sharp',     v:'sharp'},     {i:'🔥',l:'burning',   v:'burning'},
+    {i:'⚡',l:'stabbing',  v:'stabbing'},  {i:'💓',l:'throbbing', v:'throbbing'},
+    {i:'⚖️',l:'pressing',  v:'pressing'},  {i:'🪢',l:'tight',     v:'tight'},
+    {i:'😶',l:'dull',      v:'dull'},      {i:'🫥',l:'numb',      v:'numb'},
+    {i:'🌊',l:'tingling',  v:'tingling'},  {i:'😬',l:'aching',    v:'aching'},
+    {i:'🥴',l:'crushing',  v:'crushing'},  {i:'🌡️',l:'raw',      v:'raw'},
+  ],
+  sev: SEV_DATA.map(s => ({ i:s.icon, l:s.label, v:s.v })),
+  score: Array.from({length:11}, (_,i) => ({
+    i: i===0?'😊':i<=2?'😌':i<=4?'😐':i<=6?'😟':i<=8?'😰':'😱',
+    l: `${i} out of 10`, v: i,
+  })),
+};
+
+/* ══════════════════════════════════════════════
+   SENTENCE COMPOSER
+   Returns array of token objects:
+     { text, cls, slot }
+   
+   The sentence grows in 4 clean stages:
+
+   Stage 1 (body only):
+     "I feel pain in my [chest]"
+
+   Stage 2 (+ location):
+     "I feel pain in the [left side] of my [chest]"
+
+   Stage 3 (+ feeling):
+     "I feel a [burning] pain in the [left side] of my [chest]"
+
+   Stage 4 (+ severity):
+     "I feel a [burning] pain in the [left side] of my [chest],
+      [and it's quite severe] — about [8] out of 10."
+
+   Every word is tappable. Severity phrase is ONE chip
+   so it always reads as a single natural unit.
+══════════════════════════════════════════════ */
+function composeSentence() {
+  const { body, loc, feel, sev, score } = ST;
+  if (!body) return [];
+
+  const T = [];
+  const g  = t  => T.push({ text:t,    cls:'wc-g',    slot:null  });
+  const bW = t  => T.push({ text:t,    cls:'wc-body',  slot:'body' });
+  const lW = t  => T.push({ text:t,    cls:'wc-loc',   slot:'loc'  });
+  const fW = t  => T.push({ text:t,    cls:'wc-feel',  slot:'feel' });
+  const sW = t  => T.push({ text:t,    cls:'wc-sev',   slot:'sev'  });
+  const nW = t  => T.push({ text:t,    cls:'wc-num',   slot:'score'});
+
+  if (!loc && !feel && !sev) {
+    // Stage 1: "I feel pain in my [chest]"
+    g('I'); g('feel'); g('pain'); g('in'); g('my');
+    bW(body);
+
+  } else if (loc && !feel && !sev) {
+    // Stage 2: "I feel pain in the [left side] of my [chest]"
+    g('I'); g('feel'); g('pain'); g('in'); g('the');
+    lW(loc);
+    g('of'); g('my');
+    bW(body);
+
+  } else if (loc && feel && !sev) {
+    // Stage 3: "I feel a [burning] pain in the [left side] of my [chest]"
+    g('I'); g('feel'); g('a');
+    fW(feel);
+    g('pain'); g('in'); g('the');
+    lW(loc);
+    g('of'); g('my');
+    bW(body);
+
+  } else if (loc && feel && sev) {
+    // Stage 4: "I feel a [burning] pain in the [left side] of my [chest], [and it's quite severe] — about [8] out of 10."
+    g('I'); g('feel'); g('a');
+    fW(feel);
+    g('pain'); g('in'); g('the');
+    lW(loc);
+    g('of'); g('my');
+    bW(body);
+    g(',');
+    // Severity as ONE natural chip — no duplication possible
+    sW(sev.phrase);
+    g('—'); g('about');
+    nW(score + ' out of 10.');
+  }
+
+  return T;
+}
+
+/* ══════════════════════════════════════════════
+   RENDER SENTENCE
+══════════════════════════════════════════════ */
+function renderSentence(animate) {
+  const body  = document.getElementById('sentBody');
+  const hint  = document.getElementById('sentHint');
+  const wrap  = document.getElementById('sentWrap');
+  const tokens = composeSentence();
+
+  body.innerHTML = '';
+
+  if (!tokens.length) {
+    body.innerHTML = '<span class="sent-ph">Choose a button below to begin…</span>';
+    hint.style.display = 'none';
+    document.getElementById('sentSpkBtn').classList.remove('show');
+    wrap.classList.remove('complete');
+    return;
+  }
+
+  hint.style.display = '';
+  document.getElementById('sentSpkBtn').classList.add('show');
+
+  tokens.forEach((t, i) => {
+    const chip = document.createElement('span');
+    chip.className = 'wc ' + t.cls;
+    chip.textContent = t.text;
+    if (!animate) chip.style.animation = 'none';
+    else chip.style.animationDelay = (i * .04) + 's';
+
+    if (t.slot) {
+      chip.onclick = () => openAlt(t.slot, chip);
+      chip.title = 'Tap to change';
+    } else {
+      chip.style.cursor = 'default';
+    }
+
+    if (t.slot && t.slot === openSlot) chip.classList.add('lit');
+    body.appendChild(chip);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   ALTERNATIVES DRAWER
+══════════════════════════════════════════════ */
+function openAlt(slot, chipEl) {
+  openSlot = slot;
+  renderSentence(false);
+
+  const opts  = ALTS[slot];
+  const title = { body:'Which body part?', loc:'Where exactly?', feel:'Type of pain?', sev:'How severe?', score:'Pain score (0–10)' }[slot] || 'Choose';
+  document.getElementById('altTitle').textContent = title;
+
+  const optsEl = document.getElementById('altOpts');
+  optsEl.innerHTML = '';
+
+  const curVal = slot === 'score' ? ST.score : slot === 'sev' ? ST.sev?.v : ST[slot];
+
+  opts.forEach(opt => {
+    const btn = document.createElement('button');
+    const isSel = (slot === 'score' ? opt.v === ST.score : opt.v === curVal);
+    btn.className = 'alt-opt' + (isSel ? ' sel' : '');
+    btn.innerHTML = `<span class="alt-opt-ico">${opt.i}</span><span>${opt.l}</span>`;
+    btn.onclick = () => {
+      if (slot === 'score') {
+        ST.score = opt.v;
+      } else if (slot === 'sev') {
+        const sevEntry = SEV_DATA.find(s => s.v === opt.v);
+        ST.sev = sevEntry || null;
+      } else {
+        ST[slot] = opt.v;
+      }
+      closeAlt();
+      renderSentence(false);
+    };
+    optsEl.appendChild(btn);
+  });
+
+  const drawer = document.getElementById('altDrawer');
+  drawer.style.display = 'block';
+  setTimeout(() => drawer.scrollIntoView({ behavior:'smooth', block:'nearest' }), 60);
+}
+
+function closeAlt() {
+  openSlot = null;
+  document.getElementById('altDrawer').style.display = 'none';
+  renderSentence(false);
+}
+
+/* ══════════════════════════════════════════════
+   SPEECH
+══════════════════════════════════════════════ */
+function buildSpokenSentence() {
+  // Build clean readable text from tokens
+  return composeSentence()
+    .map(t => t.text)
+    .join(' ')
+    .replace(/\s+([,.])/g, '$1')
+    .replace(/\s+—\s+/g, ' — ')
+    .replace(/\s+\./g, '.')
+    .trim();
+}
+
+function speakSentNow() {
+  const tokens = composeSentence();
+  if (!tokens.length) return;
+  const txt = tokens.map(t => t.text).join(' ')
+    .replace(/\s+([,.])/g,'$1')
+    .replace(/\s+—/g,' —')
+    .trim();
+  if (!txt) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new window.SpeechSynthesisUtterance(txt);
+    u.lang = 'en-US';
+    u.rate = 0.88;
+    u.pitch = 1.05;
+    u.volume = 1;
+    const btn = document.getElementById('sentSpkBtn');
+    btn.textContent = '🔊 Speaking…';
+    u.onend = () => btn.innerHTML = '🔊 Speak this';
+    u.onerror = () => btn.innerHTML = '🔊 Speak this';
+    window.speechSynthesis.speak(u);
+  } catch(e) {
+    alert('Speech not supported in this browser. Please use Chrome.');
+  }
+}
+
+function speakSent() {
+  if (!('speechSynthesis' in window)) return;
+  const txt = buildSpokenSentence();
+  if (!txt || !ST.body) return;
+  const btn = document.getElementById('spkBtn');
+  btn.classList.add('spk-on');
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(txt);
+  u.rate = .88; u.pitch = 1.05;
+  u.onend = () => btn.classList.remove('spk-on');
+  speechSynthesis.speak(u);
+}
+function speakText(t) {
+  try {
+    window.speechSynthesis.cancel();
+    const u = new window.SpeechSynthesisUtterance(t);
+    u.lang = 'en-US'; u.rate = 0.88; u.pitch = 1.05; u.volume = 1;
+    window.speechSynthesis.speak(u);
+  } catch(e) { alert('Speech not supported. Use Chrome.'); }
+}
+
+/* ══════════════════════════════════════════════
+   SPEECH RECOGNITION
+══════════════════════════════════════════════ */
+let SR = null, micOn = false;
+function buildSR() {
+  const RC = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!RC) return null;
+  const r = new RC();
+  r.continuous = true; r.interimResults = true; r.lang = 'en-US';
+  r.onstart = () => { showSt('ok','🎙️ Microphone active'); setTimeout(hideSt,2000); document.getElementById('micbar').classList.add('on'); document.getElementById('qbox').classList.add('on'); };
+  r.onresult = e => {
+    let interim='', final='';
+    for (let i=e.resultIndex; i<e.results.length; i++) { const t=e.results[i][0].transcript; if(e.results[i].isFinal) final+=t; else interim+=t; }
+    const el=document.getElementById('micTxt');
+    if (interim) el.innerHTML=`<em>${interim}</em>`;
+    if (final) { el.textContent='"'+final.trim()+'"'; processVoice(final.trim().toLowerCase()); }
+  };
+  r.onerror = e => { if(e.error==='not-allowed'){showSt('err','❌ Mic blocked');stopMic();} };
+  r.onend = () => { document.getElementById('micbar').classList.remove('on'); document.getElementById('qbox').classList.remove('on'); if(micOn) setTimeout(()=>{if(micOn){try{r.start();}catch(e){}}},300); };
+  return r;
+}
+function toggleMic() { micOn ? stopMic() : startMic(); }
+function startMic() {
+  if (!window.SpeechRecognition && !window.webkitSpeechRecognition) { showSt('err','❌ Use Chrome for voice'); return; }
+  if (!SR) SR = buildSR(); micOn = true;
+  document.getElementById('micBtn').classList.add('mic-on');
+  document.getElementById('micLbl').textContent = '🔴 Stop';
+  showSt('inf','🎙️ Allow mic when prompted');
+  try { SR.start(); } catch(e) { try{SR.stop();}catch(_){} SR=buildSR(); setTimeout(()=>{try{SR.start();}catch(_){}},400); }
+}
+function stopMic() {
+  micOn=false; document.getElementById('micBtn').classList.remove('mic-on'); document.getElementById('micLbl').textContent='🎙️ Listen';
+  document.getElementById('micbar').classList.remove('on'); document.getElementById('qbox').classList.remove('on');
+  if(SR){try{SR.stop();}catch(e){}}
+}
+function showSt(t,m){const el=document.getElementById('status');el.className='status show '+t;el.textContent=m;}
+function hideSt(){document.getElementById('status').classList.remove('show');}
+
+const voiceRules=[
+  [{w:['chest','heart'],v:'chest'},{w:['head','headache'],v:'head'},{w:['stomach','tummy','belly'],v:'stomach'},{w:['leg','knee'],v:'leg'},{w:['arm','shoulder'],v:'arm'},{w:['back','spine'],v:'back'},{w:['foot','ankle'],v:'foot'},{w:['hand','wrist'],v:'hand'}],
+  [{w:['left'],v:'left side'},{w:['right'],v:'right side'},{w:['middle','centre','center'],v:'centre'},{w:['top','upper'],v:'top'},{w:['bottom','lower'],v:'bottom'},{w:['whole','all over'],v:'all over'},{w:['front'],v:'front'},{w:['back'],v:'back'}],
+  [{w:['sharp'],v:'sharp'},{w:['burn','burning'],v:'burning'},{w:['stab','stabbing'],v:'stabbing'},{w:['throb','throbbing'],v:'throbbing'},{w:['pressure','pressing'],v:'pressing'},{w:['tight'],v:'tight'},{w:['dull','ache'],v:'dull'},{w:['numb'],v:'numb'},{w:['tingle','tingling'],v:'tingling'},{w:['aching'],v:'aching'},{w:['crush','crushing'],v:'crushing'}],
+  [{w:['very mild','very light'],v:'very mild'},{w:['mild','light','slight'],v:'mild'},{w:['uncomfortable'],v:'uncomfortable'},{w:['moderate','medium'],v:'moderate'},{w:['quite bad'],v:'quite bad'},{w:['severe','bad','strong'],v:'severe'},{w:['very severe'],v:'very severe'},{w:['unbearable','worst'],v:'unbearable'}],
+];
+function processVoice(text) {
+  const rules = voiceRules[currentStep]; if (!rules) return;
+  for (const r of rules) { for (const w of r.w) { if (text.includes(w)) { triggerVal(r.v); return; } } }
+  showSt('inf','🤔 Didn\'t catch that — tap a button'); setTimeout(hideSt,2500);
+}
+function triggerVal(val) {
+  const btn = document.querySelector(`[data-val="${CSS.escape(val)}"]`);
+  if (btn) { btn.scrollIntoView({behavior:'smooth',block:'center'}); btn.classList.add('flash'); setTimeout(()=>{btn.classList.remove('flash');btn.click();},220); }
+}
+
+/* ══════════════════════════════════════════════
+   STEP RENDERING
+══════════════════════════════════════════════ */
+const questions = [
+  'Which part of your body is hurting?',
+  'Where exactly on that area does it hurt?',
+  'What does the pain feel like?',
+  'How bad is the pain right now?'
+];
+let typer;
+function typeQ(txt) {
+  const el=document.getElementById('qTxt'), cur=document.getElementById('qCur');
+  el.textContent=''; cur.style.display='inline-block'; let i=0; clearInterval(typer);
+  typer=setInterval(()=>{el.textContent+=txt[i++];if(i>=txt.length){clearInterval(typer);setTimeout(()=>cur.style.display='none',900);}},24);
+}
+function setProg(n){for(let i=0;i<4;i++){const p=document.getElementById('p'+i);p.className='pip'+(i<n?' done':i===n?' act':'');}}
+
+function render(n) {
+  currentStep=n; setProg(n); closeAlt();
+  document.getElementById('area').innerHTML='';
+  document.getElementById('backBtn').className='back'+(hist.length?' show':'');
+  typeQ(questions[n]);
+  if(n===0)r0(); if(n===1)r1(); if(n===2)r2(); if(n===3)r3();
+}
+function mkH(n,e,t){const d=document.createElement('div');d.className='sh';d.innerHTML=`<div class="sn">${n}</div><div class="st">${e} ${t}</div>`;return d;}
+function mkG(sm){const g=document.createElement('div');g.className='grid'+(sm?' sm':'');return g;}
+function mkAB(d){
+  const b=document.createElement('button');
+  b.className='ab';b.setAttribute('data-c',d.c||'');b.setAttribute('data-val',d.v);
+  const icon = d.i === 'HIP_SVG'
+    ? `<span class="bi" style="line-height:1;display:flex;align-items:center;justify-content:center"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 72" width="38" height="38">
+  <!-- body: head -->
+  <circle cx="30" cy="8" r="6" fill="#FDDBB4" stroke="#555" stroke-width="1.5"/>
+  <!-- neck -->
+  <rect x="27" y="13" width="6" height="5" rx="2" fill="#FDDBB4" stroke="#555" stroke-width="1.2"/>
+  <!-- torso -->
+  <path d="M18 18 Q15 28 16 42 L44 42 Q45 28 42 18 Z" fill="#FDDBB4" stroke="#555" stroke-width="1.5"/>
+  <!-- hips flare -->
+  <path d="M16 42 Q10 46 12 54 L48 54 Q50 46 44 42 Z" fill="#FDDBB4" stroke="#555" stroke-width="1.5"/>
+  <!-- left leg -->
+  <path d="M12 54 L10 72" stroke="#555" stroke-width="7" stroke-linecap="round"/>
+  <!-- right leg -->
+  <path d="M48 54 L50 72" stroke="#555" stroke-width="7" stroke-linecap="round"/>
+  <!-- arrow pointing at left hip -->
+  <line x1="0" y1="46" x2="11" y2="46" stroke="#ff5f5f" stroke-width="2.5" stroke-linecap="round"/>
+  <polygon points="11,43 17,46 11,49" fill="#ff5f5f"/>
+</svg></span>`
+    : `<span class="bi">${d.i}</span>`;
+  b.innerHTML = icon + `<span class="bl">${d.l}</span>`;
+  return b;
+}
+function selIn(btn,grid){grid.querySelectorAll('.ab').forEach(b=>b.classList.remove('sel'));btn.classList.add('sel');}
+function fadeOut(el,cb){el.style.transition='opacity .28s,transform .28s';el.style.opacity='0';el.style.transform='translateY(-10px)';setTimeout(()=>{el.style.cssText='';cb();},300);}
+
+/* STEP 0 — body */
+const bodyBtns=[
+  {i:'💔',l:'Chest',   c:'red',   v:'chest'},   {i:'🤕',l:'Head',    c:'orange',v:'head'},
+  {i:'🫃',l:'Stomach', c:'orange',v:'stomach'},  {i:'🦵',l:'Leg',     c:'blue',  v:'leg'},
+  {i:'💪',l:'Arm',     c:'purple',v:'arm'},       {i:'🔙',l:'Back',    c:'teal',  v:'back'},
+  {i:'🦶',l:'Foot',    c:'yellow',v:'foot'},      {i:'✋',l:'Hand',    c:'green', v:'hand'},
+  {i:'🦴',l:'Shoulder',c:'pink', v:'shoulder'}, {i:'🦵',l:'Knee',    c:'blue',  v:'knee'},
+  {i:'🦻',l:'Ear',    c:'yellow',v:'ear'},     {i:'😣',l:'Jaw',     c:'gray',  v:'jaw'},
+];
+const specialBtns=[
+  {i:'🌡️',l:'Pain everywhere',c:'red',   v:'everywhere'},
+  {i:'😵', l:'I feel dizzy',   c:'yellow',v:'dizzy'},
+  {i:'😊', l:"I'm okay",      c:'green', v:'okay'},
+  {i:'🤔', l:'Not sure',       c:'gray',  v:'notsure'},
+];
+function r0(){
+  const area=document.getElementById('area');
+  area.appendChild(mkH('1','🫀','Which part of your body hurts?'));
+  const g=mkG();
+  bodyBtns.forEach(d=>{
+    const b=mkAB(d);
+    b.onclick=()=>{
+      selIn(b,g); ST.body=d.v; ST.loc=null; ST.feel=null; ST.sev=null;
+      renderSentence(true); hist.push(0);
+      setTimeout(()=>fadeOut(area,()=>render(1)),420);
+    };
+    g.appendChild(b);
+  });
+  area.appendChild(g);
+  // special
+  const g2wrap=document.createElement('div'); g2wrap.style.marginTop='10px';
+  g2wrap.appendChild(mkH('','✨','Or…'));
+  const g2=mkG(true);
+  specialBtns.forEach(d=>{
+    const b=mkAB(d);
+    b.onclick=()=>{
+      selIn(b,g2);
+      const msgs={everywhere:'I feel pain all over my body.',dizzy:'I feel dizzy.',okay:"I'm okay, thank you.",notsure:"I'm not sure where the pain is."};
+      setTimeout(()=>fadeOut(area,()=>showSpecial(msgs[d.v]||d.l)),420);
+    };
+    g2.appendChild(b);
+  });
+  g2wrap.appendChild(g2); area.appendChild(g2wrap);
+}
+
+/* STEP 1 — location */
+const locBtns=[
+  {i:'⬅️',l:'Left side',  c:'blue',  v:'left side'},   {i:'➡️',l:'Right side', c:'blue',  v:'right side'},
+  {i:'🎯',l:'Centre',     c:'teal',  v:'centre'},        {i:'⬆️',l:'Top',        c:'purple',v:'top'},
+  {i:'⬇️',l:'Bottom',     c:'purple',v:'bottom'},        {i:'↔️',l:'Whole area', c:'orange',v:'whole area'},
+  {i:'🔁',l:'Front',      c:'green', v:'front'},         {i:'🔙',l:'Back',       c:'gray',  v:'back'},
+  {i:'🌐',l:'All over',   c:'red',   v:'all over'},
+];
+function r1(){
+  const area=document.getElementById('area');
+  area.appendChild(mkH('2','📍','Where exactly does it hurt?'));
+  const g=mkG(true);
+  locBtns.forEach(d=>{
+    const b=mkAB(d);
+    b.onclick=()=>{
+      selIn(b,g); ST.loc=d.v; ST.feel=null; ST.sev=null;
+      renderSentence(true); hist.push(1);
+      setTimeout(()=>fadeOut(area,()=>render(2)),420);
+    };
+    g.appendChild(b);
+  });
+  area.appendChild(g);
+}
+
+/* STEP 2 — feeling */
+const feelBtns=[
+  {i:'🔪',l:'Sharp',    c:'red',   v:'sharp'},     {i:'🔥',l:'Burning',   c:'orange',v:'burning'},
+  {i:'⚡',l:'Stabbing', c:'red',   v:'stabbing'},   {i:'💓',l:'Throbbing', c:'pink',  v:'throbbing'},
+  {i:'⚖️',l:'Pressing', c:'purple',v:'pressing'},   {i:'🪢',l:'Tight',     c:'blue',  v:'tight'},
+  {i:'😶',l:'Dull',     c:'gray',  v:'dull'},       {i:'🫥',l:'Numb',      c:'teal',  v:'numb'},
+  {i:'🌊',l:'Tingling', c:'yellow',v:'tingling'},   {i:'😬',l:'Aching',    c:'orange',v:'aching'},
+  {i:'🥴',l:'Crushing', c:'red',   v:'crushing'},   {i:'🌡️',l:'Raw',      c:'pink',  v:'raw'},
+];
+function r2(){
+  const area=document.getElementById('area');
+  area.appendChild(mkH('3','💬','What does it feel like?'));
+  const g=mkG(true);
+  feelBtns.forEach(d=>{
+    const b=mkAB(d);
+    b.onclick=()=>{
+      selIn(b,g); ST.feel=d.v; ST.sev=null;
+      renderSentence(true); hist.push(2);
+      setTimeout(()=>fadeOut(area,()=>render(3)),420);
+    };
+    g.appendChild(b);
+  });
+  area.appendChild(g);
+}
+
+/* STEP 3 — severity + slider */
+const sevBtns=[
+  {cls:'sm1',i:'😌',l:'Very mild',    v:'very mild'},
+  {cls:'sm1',i:'😐',l:'Mild',         v:'mild'},
+  {cls:'sm2',i:'😟',l:'Uncomfortable',v:'uncomfortable'},
+  {cls:'sm2',i:'😣',l:'Moderate',     v:'moderate'},
+  {cls:'sm2',i:'😣',l:'Quite bad',    v:'quite bad'},
+  {cls:'sm3',i:'😰',l:'Severe',       v:'severe'},
+  {cls:'sm3',i:'😱',l:'Very severe',  v:'very severe'},
+  {cls:'sm4',i:'💀',l:'Unbearable',   v:'unbearable'},
+];
+function r3(){
+  const area=document.getElementById('area');
+  area.appendChild(mkH('4','📊','How bad is the pain right now?'));
+  const sg=document.createElement('div'); sg.className='sev-grid';
+  let nxt;
+  sevBtns.forEach(d=>{
+    const b=document.createElement('button'); b.className='sb '+d.cls; b.setAttribute('data-val',d.v);
+    b.innerHTML=`<span class="si">${d.i}</span><span>${d.l}</span>`;
+    b.onclick=()=>{
+      sg.querySelectorAll('.sb').forEach(x=>x.classList.remove('sel')); b.classList.add('sel');
+      ST.sev = SEV_DATA.find(s=>s.v===d.v) || {v:d.v,label:d.v,phrase:"and it's "+d.v,score_hint:5};
+      renderSentence(true);
+      if(nxt) nxt.disabled=false;
+    };
+    sg.appendChild(b);
+  });
+  area.appendChild(sg);
+
+  const sw=document.createElement('div'); sw.className='sl-wrap';
+  sw.innerHTML=`<div class="sl-top"><span class="sl-tit">🔢 Pain score (0–10)</span><span class="sl-num" id="snum">${ST.score}</span></div>
+    <input type="range" min="0" max="10" value="${ST.score}" id="psl">
+    <div class="sl-ticks"><span>0 No pain</span><span>5</span><span>10 Worst</span></div>`;
+  area.appendChild(sw);
+  const sl=sw.querySelector('#psl'), snum=sw.querySelector('#snum');
+  sl.style.setProperty('--pct',(ST.score/10*100)+'%');
+  sl.addEventListener('input',()=>{
+    ST.score=parseInt(sl.value); snum.textContent=sl.value;
+    sl.style.setProperty('--pct',(sl.value/10*100)+'%');
+    renderSentence(false);
+  });
+
+  nxt=document.createElement('button'); nxt.className='nxt'; nxt.disabled=true;
+  nxt.innerHTML='✅ Complete message';
+  nxt.onclick=showFinal;
+  area.appendChild(nxt);
+}
+
+/* ══════════════════════════════════════════════
+   FINAL
+══════════════════════════════════════════════ */
+function showFinal(){
+  setProg(4); closeAlt();
+  document.getElementById('sentWrap').classList.add('complete');
+  typeQ('Message complete — press 🔊 to speak it aloud.');
+  document.getElementById('area').innerHTML='';
+  document.getElementById('backBtn').className='back show';
+  const msg = buildSpokenSentence();
+  const safe = msg.replace(/'/g,"\\'");
+  const c=document.createElement('div'); c.className='fin';
+  c.innerHTML=`<div class="fin-badge">✅ Message Ready</div>
+    <div class="fin-msg">${msg}</div>
+    <div class="fin-acts">
+      <button class="btn-spk" onclick="speakText('${safe}')">🔊 Speak Aloud</button>
+      <button class="btn-rst" onclick="restart()">🔄 Start Over</button>
+    </div>`;
+  document.getElementById('area').appendChild(c);
+}
+
+function showSpecial(msg){
+  setProg(4); typeQ('Message ready.');
+  document.getElementById('area').innerHTML='';
+  const safe=msg.replace(/'/g,"\\'");
+  const c=document.createElement('div'); c.className='fin';
+  c.innerHTML=`<div class="fin-badge">✅ Message Ready</div>
+    <div class="fin-msg">${msg}</div>
+    <div class="fin-acts">
+      <button class="btn-spk" onclick="speakText('${safe}')">🔊 Speak Aloud</button>
+      <button class="btn-rst" onclick="restart()">🔄 Start Over</button>
+    </div>`;
+  document.getElementById('area').appendChild(c);
+  // show in sentence box
+  const body=document.getElementById('sentBody');
+  body.innerHTML='';
+  msg.split(' ').forEach((w,i)=>{
+    const s=document.createElement('span');s.className='wc wc-g';s.style.animationDelay=(i*.04)+'s';s.textContent=w;s.style.cursor='default';body.appendChild(s);
+  });
+  document.getElementById('sentHint').style.display='none';
+  document.getElementById('sentWrap').classList.add('complete');
+}
+
+/* ══════════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════════ */
+function goBack(){
+  if(!hist.length)return;
+  const prev=hist.pop();
+  if(prev<=2) ST.sev=null;
+  if(prev<=1) ST.feel=null;
+  if(prev<=0) ST.loc=null;
+  document.getElementById('sentWrap').classList.remove('complete');
+  renderSentence(false);
+  render(prev);
+}
+function restart(){
+  ST={body:null,loc:null,feel:null,sev:null,score:8};
+  hist.length=0; openSlot=null; closeAlt();
+  document.getElementById('sentWrap').classList.remove('complete');
+  document.getElementById('backBtn').className='back';
+  renderSentence(false);
+  render(0);
+}
+
+/* INIT */
+if('speechSynthesis' in window) speechSynthesis.getVoices();
+render(0);
+renderSentence(false);
+</script>
+
+</body>
+</html>
